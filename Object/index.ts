@@ -1,8 +1,10 @@
 import {
-  writeFileStr
+  writeFileStr,
 } from "https://deno.land/std/fs/mod.ts";
+import { readFileStr } from "https://deno.land/std/fs/read_file_str.ts";
 
 type NodeType = null | NodeObject;
+const encoder = new TextEncoder();
 
 class NodeObject {
   private value: number;
@@ -10,7 +12,6 @@ class NodeObject {
   private right: NodeType = null;
   public _root: NodeType = null;
   public countAll: number = 0;
-  public payload: string = "";
 
   constructor(val: number = 0) {
     this.value = val;
@@ -18,10 +19,16 @@ class NodeObject {
 
   insert(newNodeValue: number): void {
     const thisNode: NodeObject = new NodeObject(newNodeValue);
+
     if (!this._root) {
       this._root = thisNode;
-      this._root.payload = ` {"name" : "Root", "parent":"null"}`;
-      writeFileStr("./target.dat", "file content");
+      (async () => {
+        await Deno.writeFile(
+          "tree.txt",
+          encoder.encode(`[{"name" : "${newNodeValue}", "parent":"null"},`),
+          { append: true },
+        );
+      })();
     } else {
       let currentRoot: NodeObject = this._root;
       currentRoot.countAll++;
@@ -40,6 +47,16 @@ class NodeObject {
             console.log(
               `Add ${newNodeValue} to the left of ${currentRoot.value}`,
             );
+            (async () => {
+              Deno.writeFile(
+                "tree.txt",
+                encoder.encode(
+                  `{"name" : "${newNodeValue}", "parent":"${currentRoot.value}"},`,
+                ),
+                { append: true },
+              );
+            })();
+
             break;
           }
         } else if (currentRoot.value < newNodeValue) {
@@ -53,6 +70,15 @@ class NodeObject {
             console.log(
               `Add ${newNodeValue} to the right of ${currentRoot.value}`,
             );
+            (async () => {
+              Deno.writeFile(
+                "tree.txt",
+                encoder.encode(
+                  `{"name" : "${newNodeValue}", "parent":"${currentRoot.value}"},`,
+                ),
+                { append: true },
+              );
+            })();
             break;
           }
         } else {
@@ -77,3 +103,14 @@ binarySearchTree.insert(47);
 console.log(binarySearchTree._root?.countAll);
 console.log(binarySearchTree._root?.countAll);
 //console.log(`Took ${t1 - t0} milliseconds.`); // <-- Calculate
+
+const decoder = new TextDecoder("utf-8");
+const text1 = decoder.decode(await Deno.readFile("tree.txt"));
+const text2 = decoder.decode(await Deno.readFile("index.html"));
+
+(async () => {
+  Deno.writeFile(
+    "index.html",
+    encoder.encode(text2.replace("666", text1)),
+  );
+})();
